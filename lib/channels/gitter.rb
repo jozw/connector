@@ -84,58 +84,55 @@ service 'gitter' do
     end
   end
 
-  action 'send' do
-    start do |data|
-      begin
-        room_name   = data['room']
-        api_key     = data['api_key']
-      rescue
-        fail "One of the required parameters (api_key, room, text) isn't set"
-      end
+  action 'send' do |data|
+    begin
+      room_name   = data['room']
+      api_key     = data['api_key']
+    rescue
+      fail "One of the required parameters (api_key, room, text) isn't set"
+    end
 
-      if data['text']
-        body = { :text => data['text'] }
-      else
-        fail 'No text received from workflow.'
-      end
+    if data['text']
+      body = { :text => data['text'] }
+    else
+      fail 'No text received from workflow.'
+    end
 
-      headers={
-        'Content-Type'=>'application/json',
-        'Accept'=>'application/json',
-        'Authorization'=>"Bearer #{api_key}"
-      }
+    headers={
+      'Content-Type'=>'application/json',
+      'Accept'=>'application/json',
+      'Authorization'=>"Bearer #{api_key}"
+    }
 
-      info 'Getting rooms'
-      rooms_uri   = 'https://api.gitter.im/v1/rooms/'
-      rooms = HTTParty.get(rooms_uri,:headers=>headers)
+    info 'Getting rooms'
+    rooms_uri   = 'https://api.gitter.im/v1/rooms/'
+    rooms = HTTParty.get(rooms_uri,:headers=>headers)
 
-      if rooms.response.code == '401'
-        fail 'API key invalid'
-      elsif rooms.response.code != '200'
-        fail 'HTTP request failed for some reason. Check for typos and try again.'
-      end
+    if rooms.response.code == '401'
+      fail 'API key invalid'
+    elsif rooms.response.code != '200'
+      fail 'HTTP request failed for some reason. Check for typos and try again.'
+    end
 
-      begin
-        room    = rooms.select{ |r| r['name'] == room_name}.first
-        room_id = room['id']
-      rescue
-        fail 'Problem finding room. Check your API Key and/or room name for errors'
-      end
+    begin
+      room    = rooms.select{ |r| r['name'] == room_name}.first
+      room_id = room['id']
+    rescue
+      fail 'Problem finding room. Check your API Key and/or room name for errors'
+    end
 
-      info "Posting message to `#{room_name}` room"
-      message_uri = "https://api.gitter.im/v1/rooms/#{room_id}/chatMessages"
-      begin
-        http_response=HTTParty.post(message_uri,body:body.to_json,:headers=>headers)
-      rescue
-        fail "Couldn't post message"
-      end
+    info "Posting message to `#{room_name}` room"
+    message_uri = "https://api.gitter.im/v1/rooms/#{room_id}/chatMessages"
+    begin
+      http_response=HTTParty.post(message_uri,body:body.to_json,:headers=>headers)
+    rescue
+      fail "Couldn't post message"
+    end
 
-      if http_response.response.code == '200'
-        action_callback status:'sent'
-      else
-        action_callback status:'failed'
-      end
-
+    if http_response.response.code == '200'
+      action_callback status:'sent'
+    else
+      action_callback status:'failed'
     end
   end
 end

@@ -134,40 +134,36 @@ service 'gitlab' do
   end
 
 
-  action 'download_repo' do
-
-    start do |data|
-
-      begin
-        endpoint = data['endpoint'] || 'https://gitlab.com/api/v3/'
-        token    = data['token'] || data['api_key']
-        username,repo     = data['repo'].split('/')
-        branch   = data['branch'] || 'master'
-      rescue
-        fail "One of the required variables (api_key, username, repo) isn't set"
-      end
-
-      info "Connecting to Gitlab on #{endpoint}"
-      begin
-        gitlab = Gitlab.client(endpoint:endpoint, private_token:token, user_agent:'Factor.io Agent')
-        all_projects = []
-        page=0
-        begin
-          projects = gitlab.projects(:per_page=>100, :page=>page)
-          all_projects.concat projects
-          page=page+1
-        end while projects.count==100
-        project = all_projects.select{|project| project.path_with_namespace == "#{username}/#{repo}"}.first
-      rescue => ex
-        fail 'Failed to connect to Gitlab. Check creds.', exception: ex
-      end
-
-      fail "Couldn't find the repo #{username}/#{repo}" if !project
-
-      url = "#{endpoint}projects/#{project.id}/repository/archive.zip?ref=#{branch}"
-      url_with_token="#{url}&private_token=#{token}"
-
-      action_callback content:url_with_token
+  action 'download_repo' do |data|
+    begin
+      endpoint = data['endpoint'] || 'https://gitlab.com/api/v3/'
+      token    = data['token'] || data['api_key']
+      username,repo     = data['repo'].split('/')
+      branch   = data['branch'] || 'master'
+    rescue
+      fail "One of the required variables (api_key, username, repo) isn't set"
     end
+
+    info "Connecting to Gitlab on #{endpoint}"
+    begin
+      gitlab = Gitlab.client(endpoint:endpoint, private_token:token, user_agent:'Factor.io Agent')
+      all_projects = []
+      page=0
+      begin
+        projects = gitlab.projects(:per_page=>100, :page=>page)
+        all_projects.concat projects
+        page=page+1
+      end while projects.count==100
+      project = all_projects.select{|project| project.path_with_namespace == "#{username}/#{repo}"}.first
+    rescue => ex
+      fail 'Failed to connect to Gitlab. Check creds.', exception: ex
+    end
+
+    fail "Couldn't find the repo #{username}/#{repo}" if !project
+
+    url = "#{endpoint}projects/#{project.id}/repository/archive.zip?ref=#{branch}"
+    url_with_token="#{url}&private_token=#{token}"
+
+    action_callback content:url_with_token
   end
 end

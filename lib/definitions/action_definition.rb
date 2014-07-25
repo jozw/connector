@@ -1,14 +1,15 @@
+# encoding: UTF-8
+
+# action definition as defined by DSL
 class ActionDefinition
-  attr_accessor :id, :name, :description, :start
+  attr_accessor :id, :start
 
   def initialize
   end
 
   def to_hash
     {
-      :id=>@id,
-      :name=>@name,
-      :description=>@description
+      id: @id
     }
   end
 end

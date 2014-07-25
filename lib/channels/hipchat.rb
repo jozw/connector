@@ -1,9 +1,7 @@
 require 'httparty'
 
 service 'hipchat' do
-
   listeners = %w(message notification exit enter topic_change).map{|r| "room_#{r}"}
-
   listeners.each do |listener_name|
     listener listener_name do
       start do |push_listener_params|
@@ -27,7 +25,7 @@ service 'hipchat' do
         begin
           http_response=HTTParty.get(uri,body:{}.to_json,:headers=>headers)
         rescue
-          fail "Couldn't get list of hooks. Considering refreshing token.", {state:'stopped'}
+          fail "Couldn't get list of hooks. Considering refreshing token."
         end
 
         if http_response.body
@@ -35,7 +33,7 @@ service 'hipchat' do
           if response['items']
             hooks=response['items'].select{|hook| hook['url']==hook_url}
           elsif response['error']
-            fail "Couldn't create web hook: #{response['error']['message']}", {state:'stopped'}
+            fail "Couldn't create web hook: #{response['error']['message']}"
           end
         end
 
@@ -47,13 +45,13 @@ service 'hipchat' do
           begin
             http_response=HTTParty.post(uri,body:body.to_json,:headers=>headers)
           rescue
-            fail '', {state:'stopped'}
+            fail ''
           end
 
           if http_response.body
             response = JSON.parse(http_response.body)
             if response['error']
-              fail "Couldn't create web hook: #{response['error']['message']}", {state:'stopped'}
+              fail "Couldn't create web hook: #{response['error']['message']}"
             elsif response['id']
               hook_id=response['id']
             end
@@ -127,37 +125,33 @@ service 'hipchat' do
     end
   end
 
-  action 'send' do
-    start do |data|
-      room_id=data['room_id'] || data['room']
-      color = data['color'] || 'gray'
-      format = data['format'] || 'text'
-      uri="https://api.hipchat.com/v2/room/#{room_id}/notification?auth_token=#{data['api_key']}"
-      body={
-        :message=>data['message'],
-        :message_format=>format,
-        :color=>color,
-        :format=>'json'
-      }
-      headers={
-        'Content-Type'=>'application/json',
-        'Accept'=>'application/json'
-      }
+  action 'send' do |data|
+    room_id=data['room_id'] || data['room']
+    color = data['color'] || 'gray'
+    format = data['format'] || 'text'
+    uri="https://api.hipchat.com/v2/room/#{room_id}/notification?auth_token=#{data['api_key']}"
+    body={
+      :message=>data['message'],
+      :message_format=>format,
+      :color=>color,
+      :format=>'json'
+    }
+    headers={
+      'Content-Type'=>'application/json',
+      'Accept'=>'application/json'
+    }
 
-      info "Posting message to `#{room_id}` room"
-      begin
-        http_response=HTTParty.post(uri,body:body.to_json,:headers=>headers)
-      rescue
-        fail "Couldn't post message"
-      end
+    info "Posting message to `#{room_id}` room"
+    begin
+      http_response=HTTParty.post(uri,body:body.to_json,:headers=>headers)
+    rescue
+      fail "Couldn't post message"
+    end
 
-      if http_response.response.code == '204'
-        action_callback status:'sent'
-      else
-        action_callback status:'failed'
-      end
-
-
+    if http_response.response.code == '204'
+      action_callback status:'sent'
+    else
+      action_callback status:'failed'
     end
   end
 end

@@ -27,46 +27,43 @@ service 'web' do
     end
   end
 
-  action 'post' do
-    start do |params|
-      begin
-        if !params['query_string']
-          contents={}
-        elsif params['query_string'].is_a?(Hash)
-          contents = params['query_string']
-        elsif params['query_string'].is_a?(String)
-          contents = JSON.parse(params['query_string'])
-        else
-          fail "Couldn't parse querystring"
-        end
-      rescue
-        fail "Couldn't parse '#{params['query_string']}' as JSON"
+  action 'post' do |params|
+    begin
+      if !params['query_string']
+        contents={}
+      elsif params['query_string'].is_a?(Hash)
+        contents = params['query_string']
+      elsif params['query_string'].is_a?(String)
+        contents = JSON.parse(params['query_string'])
+      else
+        fail "Couldn't parse querystring"
       end
-
-      begin
-        if !params['headers']
-          headers={}
-        elsif params['headers'].is_a?(Hash)
-          headers = params['headers']
-        elsif
-          headers = JSON.parse(params['headers'])
-        else
-          fail "couldn't parse headers"
-        end
-      rescue
-        fail "Couldn't parse header"
-      end
-      if contents
-        info "Posting to `#{params['url']}`"
-        begin
-          response = RestClient.post(params['url'],contents,headers)
-          info 'Post complete'
-          response
-        rescue
-          fail "Couldn't call '#{params['url']}'"
-        end
-      end
+    rescue
+      fail "Couldn't parse '#{params['query_string']}' as JSON"
     end
 
+    begin
+      if !params['headers']
+        headers={}
+      elsif params['headers'].is_a?(Hash)
+        headers = params['headers']
+      elsif
+        headers = JSON.parse(params['headers'])
+      else
+        fail "couldn't parse headers"
+      end
+    rescue
+      fail "Couldn't parse header"
+    end
+    if contents
+      info "Posting to `#{params['url']}`"
+      begin
+        response = RestClient.post(params['url'],contents,headers)
+        info 'Post complete'
+        response
+      rescue
+        fail "Couldn't call '#{params['url']}'"
+      end
+    end
   end
 end

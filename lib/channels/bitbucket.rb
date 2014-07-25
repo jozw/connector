@@ -1,8 +1,9 @@
+# encoding: UTF-8
+
 require 'bitbucket_rest_api'
 require 'open-uri'
 
 service 'bitbucket' do
-
   listener 'push' do
     start do |data|
       account_username = data['username']
@@ -27,9 +28,9 @@ service 'bitbucket' do
       end
 
       hook_url = web_hook id: 'post_receive' do
-        start do |listener_start_params, data, req, res|
+        start do |listener_start_params, hook_data, _req, _res|
           zip_uri = "https://#{listener_start_params['username']}:#{listener_start_params['password']}@bitbucket.org/#{username}/#{repo}/get/#{branch}.zip"
-          response_data = data.merge({'content'=>zip_uri})
+          response_data = hook_data.merge('content' => zip_uri)
           start_workflow response_data
         end
       end
@@ -95,16 +96,15 @@ service 'bitbucket' do
       rescue
         fail 'Getting info about the hook from BitBucket failed'
       end
-      
+
       fail "Hook wasn't found." unless hook
-      
+
       info 'Deleting hook'
       begin
         bitbucket.repos.services.delete username, repo, hook['id']
       rescue
         fail 'Deleting hook failed'
       end
-      
       {}
     end
   end
