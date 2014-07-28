@@ -1,68 +1,58 @@
+# encoding: UTF-8
+
 require 'restclient'
 
 service 'web' do
-
   listener 'hook' do
-
     start do |data|
       info 'starting webhook'
-      hook_id=data['id'] || 'post'
+      hook_id = data['id'] || 'post'
       hook_url = web_hook id: hook_id do
-        start do |listener_start_params,data,req,res|
+        start do |_listener_start_params, hook_data, _req, _res|
           info 'Got a Web Hook POST call'
-          post_data=data.dup
+          post_data = hook_data.dup
           post_data.delete('service_id')
           post_data.delete('listener_id')
           post_data.delete('instance_id')
           post_data.delete('hook_id')
           post_data.delete('user_id')
-          start_workflow({:response=>post_data})
+          start_workflow response: post_data
         end
       end
       info "Webhook started at: #{hook_url}"
-      uri=URI(hook_url)
+      uri = URI(hook_url)
       info "and #{uri.scheme}://#{uri.host}/v0.3/#{user_id}/#{hook_id}"
     end
-    stop do |data|
+    stop do |_data|
+      info 'Stopping...'
     end
   end
 
   action 'post' do |params|
+    contents  = params['query_string'] || {}
+    headers   = params['headers'] || {}
+    url       = params['url']
+
+    fail 'URL is required' unless url
+
     begin
-      if !params['query_string']
-        contents={}
-      elsif params['query_string'].is_a?(Hash)
-        contents = params['query_string']
-      elsif params['query_string'].is_a?(String)
-        contents = JSON.parse(params['query_string'])
-      else
-        fail "Couldn't parse querystring"
-      end
+      contents = JSON.parse(contents) if contents.is_a?(String)
     rescue
-      fail "Couldn't parse '#{params['query_string']}' as JSON"
+      fail "Couldn't parse '#{contents}' as JSON"
     end
 
     begin
-      if !params['headers']
-        headers={}
-      elsif params['headers'].is_a?(Hash)
-        headers = params['headers']
-      elsif
-        headers = JSON.parse(params['headers'])
-      else
-        fail "couldn't parse headers"
-      end
+      headers = JSON.parse(headers) if headers.is_a?(String)
     rescue
-      fail "Couldn't parse header"
+      fail 'Couldnt parse header'
     end
     if contents
-      info "Posting to `#{params['url']}`"
+      info "Posting to `#{url}`"
       begin
-        response = RestClient.post(params['url'],contents,headers)
-        info 'Post complete'
-        response
+        response = RestClient.post(url, contents, headers)
+        action_callback response
       rescue
-        fail "Couldn't call '#{params['url']}'"
+        fail "Couldn't call '#{url}'"
       end
     end
   end

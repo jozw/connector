@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require 'json'
 require 'rest-client'
 require 'heroku-api'
@@ -19,27 +21,34 @@ service 'heroku' do
     user     = 'factorbot'
     api_key  = params['api_key']
 
-    fail 'No content specified. What am I supposed to deploy?' if !content
-    fail 'No app specified. Where am I supposed to deploy it?' if !app
-    fail 'You need to activate Heroku on the services page' if !api_key
+    fail 'No content specified. What am I supposed to deploy?' unless content
+    fail 'No app specified. Where am I supposed to deploy it?' unless app
+    fail 'You need to activate Heroku on the services page' unless api_key
 
-    def release(api_key,app, description, slug_url)
-      payload = {:description => description, :slug_url => slug_url}
-      options={
+    def release(api_key, app, description, slug_url)
+      payload = {
+        description: description,
+        slug_url: slug_url
+      }
+
+      options = {
         'User-Agent'       => 'heroku-push-cli/0.7-ALPHA',
         'X-Ruby-Version'   => RUBY_VERSION,
         'X-Ruby-Platform'  => RUBY_PLATFORM,
         :content_type => :json,
         :accept => :json
       }
-      response = RestClient.post "https://:#{api_key}@cisaurus.heroku.com/v1/apps/#{app}/release", JSON.generate(payload), options
+
+      release_uri = "https://:#{api_key}@cisaurus.heroku.com/v1/apps/#{app}/release"
+
+      response = RestClient.post release_uri, JSON.generate(payload), options
       while response.code == 202
-        response = RestClient.get "https://:#{api_key}@cisaurus.heroku.com/#{response.headers[:location]}", options
+        release_status_uri = "https://:#{api_key}@cisaurus.heroku.com/#{response.headers[:location]}"
+        response = RestClient.get release_status_uri, options
         sleep(1)
       end
       JSON.parse response
     end
-
 
     info 'Getting the resource files from previous step'
     begin
@@ -53,20 +62,20 @@ service 'heroku' do
     info 'Unzipping file'
     begin
       temp_dir = Dir.mktmpdir
-      Zip::ZipFile.open(source) { |zip_file|
-       zip_file.each { |f|
-         f_path=File.join(temp_dir, f.name)
-         FileUtils.mkdir_p(File.dirname(f_path))
-         zip_file.extract(f, f_path) unless File.exist?(f_path)
-       }
-      }
+      Zip::ZipFile.open(source) do |zip_file|
+        zip_file.each do |f|
+          f_path = File.join(temp_dir, f.name)
+          FileUtils.mkdir_p(File.dirname(f_path))
+          zip_file.extract(f, f_path) unless File.exist?(f_path)
+        end
+      end
 
       if File.directory?(temp_dir)
         dir_list = Dir.glob("#{temp_dir}/*")
-        temp_dir = dir_list[0] if dir_list.length==1
+        temp_dir = dir_list[0] if dir_list.length == 1
       end
     rescue => ex
-      fail 'Unzip failed', exception:ex
+      fail 'Unzip failed', exception: ex
     end
 
     info "Building the buildpack using Heroku's Anvil service"
@@ -75,9 +84,9 @@ service 'heroku' do
       Anvil.headers['X-Heroku-App']  = app
 
       begin
-        capture=StringIO.new
-        old_std=$stdout
-        $stdout=capture
+        capture = StringIO.new
+        old_std = $stdout
+        $stdout = capture
 
         slug_url = Anvil::Engine.build(temp_dir)
         begin
@@ -88,7 +97,7 @@ service 'heroku' do
           warn "Build completed but couldn't pull up results of build."
         end
       ensure
-        $stdout=old_std
+        $stdout = old_std
       end
     rescue => ex
       fail 'Build failed', exception:ex
@@ -96,7 +105,7 @@ service 'heroku' do
 
     info 'Pushing buildpack to Heroku'
     begin
-      release = release(api_key,app, "Pushed by #{user}", slug_url)
+      release = release(api_key, app, "Pushed by #{user}", slug_url)
       info "Release `#{release['release']}` complete"
 
       action_callback release
@@ -105,4 +114,3 @@ service 'heroku' do
     end
   end
 end
-

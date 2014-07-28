@@ -2,10 +2,9 @@
 
 require 'github_api'
 require 'open-uri'
+require 'nokogiri'
 
-def get_github_definition
-  require 'nokogiri'
-  require 'open-uri'
+@@github_events ||= begin
   url = 'https://developer.github.com/v3/activity/events/types/'
   github_events = []
   doc = Nokogiri::HTML(open(url))
@@ -13,15 +12,14 @@ def get_github_definition
     css_id      = link['href']
     header      = doc.css(css_id)
     description_element = header[0].next_element
-    begin
+    loop do
       description_element = description_element.next_element
-    end while description_element.name == 'p'
+      break unless description_element.name == 'p'
+    end
     github_events << description_element.next_element.text
   end
   github_events
 end
-
-@@github_events ||= get_github_definition
 
 service 'github' do
   @@github_events.each do |github_event|
@@ -33,9 +31,9 @@ service 'github' do
         username, repo = repo.split('/') if !username && repo.include?('/')
         branch         = data['branch'] || 'master'
 
-        fail 'No credentials provided. Please connect Github from the Services page.' unless api_key
-        fail 'No username provided. Please set the value for username' unless username
-        fail 'No repo provided, please set the value for repo' unless repo
+        fail 'API Key is required' unless api_key
+        fail 'Username is required' unless username
+        fail 'Repo is required' unless repo
 
         info 'connecting to Github'
         begin
@@ -46,49 +44,62 @@ service 'github' do
 
 
         hook_url = web_hook id: 'post_receive' do
-          start do |listener_start_params,data,req,res|
-            received_branch = data['ref'].split('/')[-1] if data['ref']
+          start do |_listener_start_params, hook_data, _req, _res|
+            hook_branch = hook_data['ref'].split('/')[-1] if hook_data['ref']
 
-            if data['zen']
-              warn "Received ping for hook '#{data['hook_id']}'. Not triggering a workflow since this is not a push."
-            elsif received_branch != branch && github_event[:id] == 'push'
-              warn "Received hook, but incorrect branch. Expected '#{branch}', got '#{received_branch}'"
+            if hook_data['zen']
+              info "Received ping for hook '#{hook_data['hook_id']}'."
+              warn 'Not triggering a workflow since this is not a push.'
+            elsif hook_branch != branch && github_event[:id] == 'push'
+              warn 'Incorrect branch on hook'
+              warn "expected: '#{branch}', got: '#{hook_branch}'"
             else
               access_query = "access_token=#{api_key}"
 
               info 'Getting the Archive URL of the repo'
               begin
-                archive_url_template = github.repos.get(user: username, repo: repo).archive_url
-                download_ref_uri = URI(archive_url_template.sub('{archive_format}', 'zipball/').sub('{/ref}',branch))
+                repo_reference = {
+                  user: username,
+                  repo: repo
+                }
+                github_repo = github.repos.get(repo_reference)
+                archive_url_template = github_repo.archive_url
+                uri_string = archive_url_template
+                  .sub('{archive_format}', 'zipball')
+                  .sub('{/ref}', "/#{branch}")
+                download_ref_uri = URI(uri_string)
               rescue => ex
                 fail 'Failed to get archive URL from Github', exception: ex
               end
 
-              if download_ref_uri
-                info "Downloading the repo from Github (#{download_ref_uri})"
-                begin
-                  client          = Net::HTTP.new(download_ref_uri.host, download_ref_uri.port)
-                  client.use_ssl  = true
-                  response        = client.get("#{download_ref_uri.path}?#{access_query}")
-                  location        = response['location']
-                  data['content'] = URI("#{location}#{location.include?('?') ? '&' : '?' }#{access_query}")
-                rescue => ex
-                  fail 'Failed to download the repo from Github', exception: ex
-                end
-
-                start_workflow data
+              info "Downloading the repo from Github (#{download_ref_uri})"
+              begin
+                client          = Net::HTTP.new(
+                  download_ref_uri.host,
+                  download_ref_uri.port)
+                client.use_ssl  = true
+                download_uri    = "#{download_ref_uri.path}?#{access_query}"
+                response        = client.get(download_uri)
+                location        = response['location']
+                trailing        = location.include?('?') ? '&' : '?'
+                content_uri     = "#{location}#{trailing}#{access_query}"
+                hook_data['content'] = URI(content_uri)
+              rescue => ex
+                fail 'Failed to download the repo from Github', exception: ex
               end
+
+              start_workflow hook_data
             end
           end
         end
 
         info 'Checking for existing hook'
         begin
-          hook = github.repos.hooks.list(username,repo).find { |h| h['config'] && h['config']['url'] && h['config']['url'] == hook_url }
-          if hooks
-            github_webhook_id = hooks.first.id
-            info 'Found existing hook'
+          hook = github.repos.hooks.list(username, repo).find do |h|
+            h['config'] && h['config']['url'] && h['config']['url'] == hook_url
           end
+
+          github_webhook_id = hook.id
         rescue => ex
           fail "Couldn't get list of existing hooks. Check username/repo.", exception: ex
         end
@@ -196,7 +207,9 @@ service 'github' do
 
     info 'Downloading the repo from Github'
     begin
-      client         = Net::HTTP.new(download_ref_uri.host, download_ref_uri.port)
+      client         = Net::HTTP.new(
+        download_ref_uri.host,
+        download_ref_uri.port)
       client.use_ssl = true
       access_query   = "access_token=#{api_key}"
       response       = client.get("#{download_ref_uri.path}?#{access_query}")
@@ -205,7 +218,7 @@ service 'github' do
         content: "#{response['location']}#{uri_connector}#{access_query}"
       }
     rescue => ex
-      fail 'Failed to download the repo from Github', exception:ex
+      fail 'Failed to download the repo from Github', exception: ex
     end
 
     action_callback response_data

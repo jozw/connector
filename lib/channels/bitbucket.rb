@@ -2,6 +2,7 @@
 
 require 'bitbucket_rest_api'
 require 'open-uri'
+require 'uri'
 
 service 'bitbucket' do
   listener 'push' do
@@ -29,8 +30,11 @@ service 'bitbucket' do
 
       hook_url = web_hook id: 'post_receive' do
         start do |listener_start_params, hook_data, _req, _res|
-          zip_uri = "https://#{listener_start_params['username']}:#{listener_start_params['password']}@bitbucket.org/#{username}/#{repo}/get/#{branch}.zip"
-          response_data = hook_data.merge('content' => zip_uri)
+          zip_uri          = URI('https://bitbucket.org')
+          zip_uri.user     = listener_start_params['username']
+          zip_uri.password = listener_start_params['password']
+          zip_uri.path     = "/#{username}/#{repo}/get/#{branch}.zip"
+          response_data    = hook_data.merge('content' => zip_uri.to_s)
           start_workflow response_data
         end
       end
@@ -60,7 +64,11 @@ service 'bitbucket' do
             'type'  => 'POST',
             'URL'   => hook_url
           }
-          bitbucket_webhook_id = bitbucket.repos.services.create(username, repo, bitbucket_hook_settings)['id']
+          bitbucket_webhook = bitbucket.repos.services.create(
+            username,
+            repo,
+            bitbucket_hook_settings)
+          bitbucket_webhook_id = bitbucket_webhook['id']
         rescue
           fail 'Hook creation in BitBucket failed'
         end
