@@ -165,6 +165,13 @@ service 'hipchat' do
     room_id = data['room_id'] || data['room']
     color   = data['color'] || 'gray'
     format  = data['format'] || 'text'
+    api_key = data['api_key']
+    message = data['message']
+
+    fail 'API Key is required' unless api_key
+    fail 'Message is required' unless message
+    fail 'Room ID is required' unless room_id
+
     uri_options = {
       room: room_id,
       path: 'notification',
@@ -173,7 +180,7 @@ service 'hipchat' do
     uri = hipchat_uri uri_options
 
     body = {
-      message: data['message'],
+      message: message,
       message_format: format,
       color: color,
       format: 'json'
