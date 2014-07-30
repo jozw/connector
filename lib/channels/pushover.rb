@@ -17,11 +17,11 @@ service 'pushover' do
     contents = {
       message: message,
       title: title,
-      user: username,
+      user: user,
       token: token
     }
 
-    info 'Sending message'
+    info "Sending message '#{title}: #{message}'"
     begin
       uri = 'https://api.pushover.net/1/messages.json'
       raw_response = RestClient.post(uri, contents)
