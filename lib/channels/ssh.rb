@@ -18,7 +18,7 @@ service 'ssh' do
     fail 'Host is required' unless host_param
 
     output = ''
-    command_lines = {}
+    command_lines = []
 
     info 'Setting up private key'
     begin
