@@ -24,10 +24,10 @@ end
 service 'github' do
   @@github_events.each do |github_event|
     listener github_event do
-      start do |data|
-        api_key        = data['api_key']
-        username       = data['username']
-        repo           = data['repo']
+      start do |params|
+        api_key        = params['api_key']
+        username       = params['username']
+        repo           = params['repo']
         branch         = params['branch']
 
         if repo
@@ -128,10 +128,10 @@ service 'github' do
         end
       end
 
-      stop do |data|
-        api_key        = data['api_key']
-        username       = data['username']
-        repo           = data['repo']
+      stop do |params|
+        api_key        = params['api_key']
+        username       = params['username']
+        repo           = params['repo']
         branch         = params['branch']
 
         if repo
@@ -176,9 +176,9 @@ service 'github' do
   end
 
   action 'download' do |params|
-    api_key        = data['api_key']
-    username       = data['username']
-    repo           = data['repo']
+    api_key        = params['api_key']
+    username       = params['username']
+    repo           = params['repo']
     branch         = params['branch']
 
     if repo
