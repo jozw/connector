@@ -76,10 +76,15 @@ class ListenerInstance < Instance
 
   private
 
-  def hook_url(service_id,listener_id,instance_id,web_hook_id)
-    path="v0.3/#{service_id}/listeners/#{listener_id}/instances/#{instance_id}/hooks/#{web_hook_id}"
-    hook_url="https://connector.factor.io/#{path}"
-    hook_url="#{ENV['LISTENER_DEV_URI']}/#{path}" if ENV['LISTENER_DEV_URI']
-    hook_url
+  def hook_url(service_id, listener_id, instance_id, web_hook_id)
+    scheme        = request.scheme || 'http'
+    host          = ENV['CONNECTOR_HOST'] || request.host_with_port
+    service_path  = "/v0.4/#{service_id}"
+    listener_path = "/listeners/#{listener_id}"
+    instance_path = "/instances/#{instance_id}"
+    hooks_path    = "/hooks/#{web_hook_id}"
+    path = service_path + listener_path + instance_path + hooks_path
+
+    "#{scheme}://#{host}#{path}"
   end
 end
