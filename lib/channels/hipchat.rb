@@ -3,32 +3,26 @@
 require 'httparty'
 
 service 'hipchat' do
-
-  def hipchat_uri(params = {})
-    base = 'https://api.hipchat.com/v2/'
-    base += "room/#{params[:room]}" if params[:room]
-    base += "webhook/#{params[:webhook]}" if params[:webhook]
-    base += "/#{params[:path]}" if params[:path]
-    base += "?auth_token=#{params[:token]}" if params[:token]
-    base
-  end
-
   listeners = %w(message notification exit enter topic_change).map do |n|
     "room_#{n}"
   end
   listeners.each do |listener_name|
     listener listener_name do
-      start do |push_listener_params|
-        room_id = push_listener_params['room_id']
-        room_id ||= push_listener_params['room']
+      start do |params|
+        room_id =   params['room_id'] || params['room']
+        api_key =   params['api_key']
+        filter  = params['filter']
+
+        fail 'API Key is required' unless api_key
+        fail 'Room ID is required' unless room_id
+        fail 'Filter is required' unless filter
 
         hook_url = get_web_hook(listener_options[:id])
-        webhook_uri_options = {
-          room: room_id,
-          path: 'webhook',
-          token: push_listener_params['api_key']
-        }
-        uri = hipchat_uri webhook_uri_options
+
+        base = 'https://api.hipchat.com/v2/'
+        path = ['room', room_id, 'webhook'].join('/')
+        auth_query = "?auth_token=#{api_key}"
+        uri = base + path + auth_query
 
         headers = {
           'Content-Type' => 'application/json',
@@ -59,7 +53,7 @@ service 'hipchat' do
           begin
             body = {
               url: hook_url,
-              pattern: push_listener_params['filter'],
+              pattern: filter,
               event: listener_name,
               name: 'workflow'
             }
@@ -83,10 +77,10 @@ service 'hipchat' do
         end
 
         hook_url = web_hook id: listener_name do
-          start do |_listener_start_params, hook_data, _req, _res|
+          start do |listener_start_params, hook_data, _req, _res|
             info 'Triggering workflow...'
             begin
-              filter = push_listener_params['filter']
+              filter           = listener_start_params['filter']
               original_message = hook_data['item']['message']['message']
               regexp           = Regexp.new(filter)
               matches          = regexp.match(original_message).captures
@@ -106,19 +100,18 @@ service 'hipchat' do
         end
       end
 
-      stop do |push_listener_params|
-        room_id = push_listener_params['room_id']
-        room_id ||= push_listener_params['room']
+      stop do |params|
+        room_id = params['room_id']
+        room_id ||= params['room']
+        api_key = params['api_key']
 
         info "Deleting hook #{listener_options[:id]}"
         hook_url = get_web_hook(listener_options[:id])
 
-        webhook_uri_options = {
-          room: room_id,
-          path: 'webhook',
-          token: push_listener_params['api_key']
-        }
-        uri = hipchat_uri webhook_uri_options
+        base = 'https://api.hipchat.com/v2/'
+        path = ['room', room_id, 'webhook'].join('/')
+        auth_query = "?auth_token=#{api_key}"
+        uri = base + path + auth_query
 
         headers = {
           'Content-Type' => 'application/json',
@@ -139,12 +132,10 @@ service 'hipchat' do
 
             hooks.each do |hook|
               begin
-                webhook_delete_uri_options = {
-                  room: room_id,
-                  webhook: hook['id'],
-                  token: push_listener_params['api_key']
-                }
-                delete_uri = hipchat_uri webhook_delete_uri_options
+                base       = 'https://api.hipchat.com/v2/'
+                path       = ['room', room_id, 'webhook', hook['id']].join('/')
+                auth_query = "?auth_token=#{api_key}"
+                delete_uri = base + path + auth_query
 
                 http_response = HTTParty.delete(delete_uri, headers: headers)
               rescue => ex
@@ -172,12 +163,10 @@ service 'hipchat' do
     fail 'Message is required' unless message
     fail 'Room ID is required' unless room_id
 
-    uri_options = {
-      room: room_id,
-      path: 'notification',
-      token: api_key
-    }
-    uri = hipchat_uri uri_options
+    base       = 'https://api.hipchat.com/v2/'
+    path       = ['room', room_id, 'notification'].join('/')
+    auth_query = "?auth_token=#{api_key}"
+    uri        = base + path + auth_query
 
     body = {
       message: message,
