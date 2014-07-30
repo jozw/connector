@@ -49,7 +49,7 @@ service 'github' do
             if hook_data['zen']
               info "Received ping for hook '#{hook_data['hook_id']}'."
               warn 'Not triggering a workflow since this is not a push.'
-            elsif hook_branch != branch && github_event[:id] == 'push'
+            elsif hook_branch != branch && github_event == 'push'
               warn 'Incorrect branch on hook'
               warn "expected: '#{branch}', got: '#{hook_branch}'"
             else
@@ -112,7 +112,7 @@ service 'github' do
               'name' => 'web',
               'active' => true,
               'config' => github_config,
-              'events' => github_event[:id]
+              'events' => github_event
             }
             repo_hooks = github.repos.hooks
             hook = repo_hooks.create(username, repo, github_settings)
