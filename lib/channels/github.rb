@@ -28,10 +28,12 @@ service 'github' do
         api_key        = data['api_key']
         username       = data['username']
         repo           = data['repo']
+        branch         = params['branch']
 
         if repo
           username, repo = repo.split('/') if repo.include?('/') && !username
-          repo, branch   = repo.split('#') if repo.include?('#')
+          repo, branch   = repo.split('#') if repo.include?('#') && !branch
+          branch         ||= 'master'
         end
 
         fail 'API Key is required' unless api_key
@@ -130,10 +132,12 @@ service 'github' do
         api_key        = data['api_key']
         username       = data['username']
         repo           = data['repo']
+        branch         = params['branch']
 
         if repo
           username, repo = repo.split('/') if repo.include?('/') && !username
-          repo, branch   = repo.split('#') if repo.include?('#')
+          repo, branch   = repo.split('#') if repo.include?('#') && !branch
+          branch         ||= 'master'
         end
 
         fail 'API Key is required' unless api_key
@@ -172,14 +176,15 @@ service 'github' do
   end
 
   action 'download' do |params|
-    api_key  = params['api_key']
-    username = params['username']
-    repo     = params['repo']
-    branch   = params['branch'] || 'master'
+    api_key        = data['api_key']
+    username       = data['username']
+    repo           = data['repo']
+    branch         = params['branch']
 
     if repo
       username, repo = repo.split('/') if repo.include?('/') && !username
-      repo, branch   = repo.split('#') if repo.include?('#')
+      repo, branch   = repo.split('#') if repo.include?('#') && !branch
+      branch         ||= 'master'
     end
 
     fail 'Repo must be defined' unless repo
