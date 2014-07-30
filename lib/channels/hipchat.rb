@@ -9,20 +9,20 @@ service 'hipchat' do
   listeners.each do |listener_name|
     listener listener_name do
       start do |params|
-        room_id =   params['room_id'] || params['room']
-        api_key =   params['api_key']
+        room_id = params['room_id'] || params['room']
+        api_key = params['api_key']
         filter  = params['filter']
 
         fail 'API Key is required' unless api_key
         fail 'Room ID is required' unless room_id
         fail 'Filter is required' unless filter
 
-        hook_url = get_web_hook(listener_options[:id])
+        hook_url = get_web_hook(listener_name)
 
-        base = 'https://api.hipchat.com/v2/'
-        path = ['room', room_id, 'webhook'].join('/')
+        base       = 'https://api.hipchat.com/v2/'
+        path       = ['room', room_id, 'webhook'].join('/')
         auth_query = "?auth_token=#{api_key}"
-        uri = base + path + auth_query
+        uri        = base + path + auth_query
 
         headers = {
           'Content-Type' => 'application/json',
@@ -33,7 +33,7 @@ service 'hipchat' do
         begin
           http_response = HTTParty.get(uri, body: {}.to_json, headers: headers)
         rescue
-          fail "Couldn't get list of hooks. Considering refreshing token."
+          fail 'Could not get list of hooks. Check your creds.'
         end
 
         if http_response.body
@@ -46,7 +46,7 @@ service 'hipchat' do
         end
 
         if hook
-          info 'Looks like this bad boy is already running'
+          info 'Looks like this web hook is already registered'
           hook_id = hook['id']
         else
           info "Creating hook in `#{room_id}` room"
@@ -101,17 +101,19 @@ service 'hipchat' do
       end
 
       stop do |params|
-        room_id = params['room_id']
-        room_id ||= params['room']
+        room_id = params['room_id'] || params['room']
         api_key = params['api_key']
 
-        info "Deleting hook #{listener_options[:id]}"
-        hook_url = get_web_hook(listener_options[:id])
+        fail 'API Key is required' unless api_key
+        fail 'Room ID is required' unless room_id
 
-        base = 'https://api.hipchat.com/v2/'
-        path = ['room', room_id, 'webhook'].join('/')
+        info "Deleting hook #{listener_name}"
+        hook_url = get_web_hook(listener_name)
+
+        base       = 'https://api.hipchat.com/v2/'
+        path       = ['room', room_id, 'webhook'].join('/')
         auth_query = "?auth_token=#{api_key}"
-        uri = base + path + auth_query
+        uri        = base + path + auth_query
 
         headers = {
           'Content-Type' => 'application/json',
