@@ -79,8 +79,8 @@ class ListenerInstance < Instance
   private
 
   def hook_url(service_id, listener_id, instance_id, web_hook_id)
-    scheme        = request.scheme || 'http'
-    host          = ENV['CONNECTOR_HOST'] || request.host_with_port
+    scheme        = ENV['RACK_ENV'] == 'production' ? 'https' : 'http'
+    host          = ENV['CONNECTOR_HOST'] || 'localhost:9294'
     service_path  = "/v0.4/#{service_id}"
     listener_path = "/listeners/#{listener_id}"
     instance_path = "/instances/#{instance_id}"
