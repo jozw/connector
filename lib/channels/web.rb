@@ -20,8 +20,6 @@ service 'web' do
         end
       end
       info "Webhook started at: #{hook_url}"
-      uri = URI(hook_url)
-      info "and #{uri.scheme}://#{uri.host}/v0.3/#{user_id}/#{hook_id}"
     end
     stop do |_data|
       info 'Stopping...'
