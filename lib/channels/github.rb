@@ -42,7 +42,6 @@ service 'github' do
           fail 'Failed to connect to github. Try re-activating Github service.', exception: ex
         end
 
-
         hook_url = web_hook id: 'post_receive' do
           start do |_listener_start_params, hook_data, _req, _res|
             hook_branch = hook_data['ref'].split('/')[-1] if hook_data['ref']
@@ -98,13 +97,11 @@ service 'github' do
           hook = github.repos.hooks.list(username, repo).find do |h|
             h['config'] && h['config']['url'] && h['config']['url'] == hook_url
           end
-
-          github_webhook_id = hook.id
         rescue => ex
-          fail "Couldn't get list of existing hooks. Check username/repo.", exception: ex
+          fail "Couldn't get list of existing hooks. Check username/repo."
         end
 
-        unless github_webhook_id
+        unless hook
           info "Creating hook to '#{hook_url}' on #{username}/#{repo}."
           begin
             github_config = {
@@ -118,12 +115,11 @@ service 'github' do
               'events' => github_event[:id]
             }
             repo_hooks = github.repos.hooks
-            github_hook = repo_hooks.create(username, repo, github_settings)
-            github_webhook_id = github_hook.id
+            hook = repo_hooks.create(username, repo, github_settings)
           rescue => ex
             fail 'Hook creation in Github failed', exception: ex
           end
-          info "Created hook with id '#{github_webhook_id}'"
+          info "Created hook with id '#{hook.id}'"
         end
       end
 
