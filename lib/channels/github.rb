@@ -28,8 +28,11 @@ service 'github' do
         api_key        = data['api_key']
         username       = data['username']
         repo           = data['repo']
-        username, repo = repo.split('/') if !username && repo.include?('/')
-        branch         = data['branch'] || 'master'
+
+        if repo
+          username, repo = repo.split('/') if repo.include?('/') && !username
+          repo, branch   = repo.split('#') if repo.include?('#')
+        end
 
         fail 'API Key is required' unless api_key
         fail 'Username is required' unless username
@@ -124,13 +127,18 @@ service 'github' do
       end
 
       stop do |data|
-        begin
-          api_key  = data['api_key']
-          username = data['username']
-          repo     = data['repo']
-        rescue
-          fail "One of the required parameters (api_key, username, repo) isn't set"
+        api_key        = data['api_key']
+        username       = data['username']
+        repo           = data['repo']
+
+        if repo
+          username, repo = repo.split('/') if repo.include?('/') && !username
+          repo, branch   = repo.split('#') if repo.include?('#')
         end
+
+        fail 'API Key is required' unless api_key
+        fail 'Username is required' unless username
+        fail 'Repo is required' unless repo
 
         hook_url = get_web_hook('post_receive')
 
