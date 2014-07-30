@@ -92,7 +92,7 @@ service 'hipchat' do
             end
 
             begin
-              start_workflow data
+              start_workflow hook_data
             rescue => ex
               fail 'Internal error: failed to send message for next step', exception: ex
             end
