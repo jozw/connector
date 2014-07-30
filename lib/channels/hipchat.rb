@@ -168,7 +168,7 @@ service 'hipchat' do
     uri_options = {
       room: room_id,
       path: 'notification',
-      token: push_listener_params['api_key']
+      token: api_key
     }
     uri = hipchat_uri uri_options
 
