@@ -84,6 +84,10 @@ service 'ssh' do
 
   action 'upload' do |params|
     content = params['content']
+    path    = params['path']
+
+    fail 'Content is required' unless content
+    fail 'Remote path is required' unless path
 
     info 'Setting up private key'
     begin
@@ -120,10 +124,10 @@ service 'ssh' do
     end
 
     begin
-      trail = params['remote_path'][-1] == '/' ? '' : '/'
-      remote_directory = "#{params['remote_path']}#{trail}"
+      trail = path[-1] == '/' ? '' : '/'
+      remote_directory = "#{path}#{trail}"
     rescue
-      fail "The remote path '#{params['remote_path']}' was unparsable"
+      fail "The remote path '#{path}' was unparsable"
     end
 
     fail "The path #{remote_directory} must be an absolute path" if remote_directory[0] != '/'
