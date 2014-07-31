@@ -71,6 +71,10 @@ group :channels do
     gem 'eventmachine'
     gem 'em-http-request'
   end
+
+  group :travis do
+    gem 'travis'
+  end
 end
 
 group :development do
