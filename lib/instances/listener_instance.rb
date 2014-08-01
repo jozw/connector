@@ -19,8 +19,7 @@ class ListenerInstance < Instance
       respond type: 'return'
     rescue FactorConnectorError => ex
       error ex.message
-      respond type: 'fail' if ex.stopped?
-      respond type: 'started' if ex.started?
+      respond type: 'fail'
       exception ex.exception, params: @params if ex.exception
     rescue => ex
       error "Couldn't start listener for unexpected reason. We've been informed and looking into it."
@@ -35,8 +34,7 @@ class ListenerInstance < Instance
       respond type: 'stopped'
     rescue FactorConnectorError => ex
       error ex.message
-      respond type: 'stopped' if ex.stopped?
-      respond type: 'fail' if ex.started?
+      respond type: 'fail'
       exception ex.exception, params: @params if ex.exception
     rescue ex
       error "Couldn't stop listener for unexpected reason. We've been informed and looking into it."
