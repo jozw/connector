@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require 'json'
 require 'multi_json'
 require 'sinatra/base'
@@ -17,17 +19,19 @@ require_relative 'service_manager.rb'
   end
 end
 
+# The main function for the Sinatra app
 class ServiceApp
   attr_accessor :sinatra_app
 
   def load(filename)
     service_manager = Factor::ServiceManager.new
     service_manager.load(filename)
-    @sinatra_app.settings.service_managers[service_manager.definition.id] = service_manager
+    service_id = service_manager.definition.id
+    @sinatra_app.settings.service_managers[service_id] = service_manager
   end
 
   def initialize
-    @sinatra_app=Sinatra.new do
+    @sinatra_app = Sinatra.new do
       register Sinatra::Namespace
 
       configure :production do
@@ -47,17 +51,12 @@ class ServiceApp
       end
 
       helpers do
-        def production?
-          ENV['RACK_ENV']=='production'
-        end
-
         def get_params
-
-          body={}
-          begin
-            body_payload=MultiJson.load(request.body.read)
-          rescue => ex
-            body_payload={}
+          body = {}
+          body_payload = begin
+            MultiJson.load(request.body.read)
+          rescue
+            {}
           end
           body.merge!(body_payload)
 
@@ -75,12 +74,12 @@ class ServiceApp
         end
 
         def not_found
-          halt 404, json({message: 'No record found'})
+          halt 404, json(message: 'No record found')
         end
 
         def get_service_instance(instance_id)
-          service_instance=settings.service_instances[instance_id]
-          not_found if !service_instance
+          service_instance = settings.service_instances[instance_id]
+          not_found unless service_instance
           service_instance
         end
 
@@ -95,7 +94,7 @@ class ServiceApp
 
         def get_service_manager(service_id)
           service_manager = settings.service_managers[service_id]
-          not_found if !service_manager
+          not_found unless service_manager
           service_manager
         end
 
@@ -116,51 +115,54 @@ class ServiceApp
         namespace '/:service_id' do
           namespace '/listeners' do
             post '/:listener_id/instances/:instance_id/hooks/:hook_id' do
-              data = get_params
-              listener_id=data['listener_id']
-              instance_id=data['instance_id']
-              hook_id=data['hook_id']
-              service_instance=get_service_instance(instance_id)
+              data             = get_params
+              listener_id      = data['listener_id']
+              instance_id      = data['instance_id']
+              hook_id          = data['hook_id']
+              service_instance = get_service_instance(instance_id)
               begin
-                service_instance.call_hook(listener_id,hook_id,data,request,response)
+                service_instance.call_hook(listener_id, hook_id, data, request, response)
               rescue
                 not_found
               end
-              {:message=>'Call to hook completed'}.to_json
+              {message: 'Call to hook completed'}.to_json
             end
 
             get '/:listener_id' do
-              data=get_params
+              data = get_params
               listener_id = data['listener_id']
               service_id = data['service_id']
 
               if request.websocket?
                 request.websocket do |ws|
                   settings.sockets << ws
-                  service_manager=get_service_manager(service_id)
-                  service_instance=service_manager.instance
-                  settings.service_instances[service_instance.instance_id]=service_instance
+                  service_manager = get_service_manager(service_id)
+                  service_instance = service_manager.instance
+                  settings.service_instances[service_instance.instance_id] = service_instance
 
-                  listener_data={}
+                  listener_data = {}
 
                   ws.onmessage do |msg|
                     logger.info "MESSAGE #{request.path_info}"
-                    listener_data=MultiJson.load(msg)
+                    listener_data = MultiJson.load(msg)
 
                     service_instance.callback = proc do |listener_response|
-                      if listener_response[:type]=='log'
+                      if listener_response[:type] == 'log'
+                        message = listener_response[:message]
                         case listener_response[:status]
-                        when 'info' then logger.info listener_response[:message]
-                        when 'warn' then logger.warn listener_response[:message]
-                        when 'error' then logger.error listener_response[:message]
-                        when 'debug' then logger.error listener_response[:message]
+                        when 'info' then logger.info message
+                        when 'warn' then logger.warn message
+                        when 'error' then logger.error message
+                        when 'debug' then logger.error message
                         end
                       end
-                      logger.error listener_response[:message] if listener_response[:type]=='fail' && listener_response[:message]
+                      if listener_response[:type] == 'fail' && listener_response[:message]
+                        logger.error listener_response[:message]
+                      end
                       ws.send(MultiJson.dump(listener_response))
                     end
 
-                    service_instance.start_listener(listener_id,listener_data)
+                    service_instance.start_listener(listener_id, listener_data)
                   end
 
                   ws.onopen do
@@ -180,21 +182,21 @@ class ServiceApp
 
                 end
               else
-                halt 400, json({message: 'No a websocket handshake'})
+                halt 400, json(message: 'No a websocket handshake')
               end
             end
           end
 
           namespace '/actions' do
             get '/:action_id' do
-              data=get_params
+              data = get_params
               action_id = data['action_id']
               service_id = data['service_id']
 
               if request.websocket?
                 request.websocket do |ws|
-                  service_manager=get_service_manager(service_id)
-                  service_instance=service_manager.instance
+                  service_manager  = get_service_manager(service_id)
+                  service_instance = service_manager.instance
 
                   ws.onopen do
                     logger.info "OPEN #{request.path_info}"
@@ -210,25 +212,26 @@ class ServiceApp
 
                   ws.onmessage do |msg|
                     logger.info "MESSAGE #{request.path_info}"
-                    action_data=MultiJson.load(msg)
+                    action_data = MultiJson.load(msg)
                     service_instance.callback = proc do |action_response|
-                      if action_response[:type]=='log'
+                      if action_response[:type] == 'log'
+                        message = action_response[:message]
                         case action_response[:status]
-                        when 'info' then logger.info action_response[:message]
-                        when 'warn' then logger.warn action_response[:message]
-                        when 'error' then logger.error action_response[:message]
-                        when 'debug' then logger.error action_response[:message]
+                        when 'info' then logger.info message
+                        when 'warn' then logger.warn message
+                        when 'error' then logger.error message
+                        when 'debug' then logger.error message
                         end
                       end
-                      logger.error action_response[:message] if action_response[:type]=='fail' && action_response[:message]
-                      logger.info "RESPOND #{action_response[:payload]}" if action_response[:type]=='return'
+                      logger.error action_response[:message] if action_response[:type] == 'fail' && action_response[:message]
+                      logger.info "RESPOND #{action_response[:payload]}" if action_response[:type] == 'return'
                       ws.send(MultiJson.dump(action_response))
                     end
-                    service_instance.call_action(action_id,action_data)
+                    service_instance.call_action(action_id, action_data)
                   end
                 end
               else
-                halt 400, json({message: 'No a websocket handshake'})
+                halt 400, json(message: 'No a websocket handshake')
               end
             end
           end
