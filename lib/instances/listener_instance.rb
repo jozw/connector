@@ -16,7 +16,7 @@ class ListenerInstance < Instance
 
     begin
       instance_exec @params, &@definition.start
-      respond type: 'started'
+      respond type: 'return'
     rescue FactorConnectorError => ex
       error ex.message
       respond type: 'fail' if ex.stopped?
