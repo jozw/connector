@@ -11,7 +11,6 @@ class Instance
   attr_accessor :definition, :callback, :instance_id
 
   def initialize(options={})
-    # @factor_client = Factor::Client.new(options[:username],options[:token])
     @definition=options[:definition] if options[:definition]
   end
 
