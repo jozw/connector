@@ -47,5 +47,13 @@ module Factor
         @listener_instances.delete listener_id
       end
     end
+
+    def has_action?(action_id)
+      @definition.actions.include?(action_id)
+    end
+
+    def has_listener?(listener_id)
+      @definition.listeners.include?(listener_id)
+    end
   end
 end

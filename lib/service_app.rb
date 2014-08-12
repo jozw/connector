@@ -140,6 +140,8 @@ class ServiceApp
                   service_instance = service_manager.instance
                   settings.service_instances[service_instance.instance_id] = service_instance
 
+                  not_found unless service_instance.has_listener?(listener_id)
+
                   listener_data = {}
 
                   ws.onmessage do |msg|
@@ -197,6 +199,8 @@ class ServiceApp
                 request.websocket do |ws|
                   service_manager  = get_service_manager(service_id)
                   service_instance = service_manager.instance
+
+                  not_found unless service_instance.has_action?(action_id)
 
                   ws.onopen do
                     logger.info "OPEN #{request.path_info}"
