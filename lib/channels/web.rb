@@ -27,7 +27,7 @@ service 'web' do
   end
 
   action 'post' do |params|
-    contents  = params['query_string'] || {}
+    contents  = params['params'] || {}
     headers   = params['headers'] || {}
     url       = params['url']
 
