@@ -1,28 +1,30 @@
 # encoding: UTF-8
 
 require 'github_api'
-require 'open-uri'
-require 'nokogiri'
 
-@@github_events ||= begin
-  url = 'https://developer.github.com/v3/activity/events/types/'
-  github_events = []
-  doc = Nokogiri::HTML(open(url))
-  doc.css('#markdown-toc > li > a').each do |link|
-    css_id      = link['href']
-    header      = doc.css(css_id)
-    description_element = header[0].next_element
-    loop do
-      description_element = description_element.next_element
-      break unless description_element.name == 'p'
-    end
-    github_events << description_element.next_element.text
-  end
-  github_events
-end
+github_events = [
+  'commit_comment',
+  'create',
+  'delete',
+  'deployment',
+  'deployment_status',
+  'download',
+  'fork',
+  'gollum',
+  'issue_comment',
+  'issues',
+  'member',
+  'page_build',
+  'public',
+  'pull_request',
+  'pull_request_review_comment',
+  'push',
+  'release',
+  'team_add',
+  'watch']
 
 service 'github' do
-  @@github_events.each do |github_event|
+  github_events.each do |github_event|
     listener github_event do
       start do |params|
         api_key        = params['api_key']
