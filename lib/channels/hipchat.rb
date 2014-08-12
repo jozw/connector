@@ -3,9 +3,7 @@
 require 'httparty'
 
 service 'hipchat' do
-  listeners = %w(message notification exit enter topic_change)
-  end
-  listeners.each do |listener_name|
+  %w(message notification exit enter topic_change).each do |listener_name|
     listener listener_name do
       start do |params|
         room_id     = params['room_id'] || params['room']
