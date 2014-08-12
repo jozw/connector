@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require 'addressable/uri'
 require 'zip/zipfilesystem'
 require 'rubygems/package'
@@ -7,15 +9,16 @@ require 'fileutils'
 
 require_relative '../errors.rb'
 
+# Instance super class
 class Instance
   attr_accessor :definition, :callback, :instance_id
 
-  def initialize(options={})
-    @definition=options[:definition] if options[:definition]
+  def initialize(options = {})
+    @definition = options[:definition] if options[:definition]
   end
 
   def callback=(block)
-    @callback=block if block
+    @callback = block if block
   end
 
   def respond(params)
@@ -42,13 +45,13 @@ class Instance
     log 'debug', message
   end
 
-  def log(status,message)
-    respond type:'log', status:status, message:message
+  def log(status, message)
+    respond type: 'log', status: status, message: message
   end
 
-  protected 
+  protected
 
-  def exception(ex,parameters={})
+  def exception(ex, parameters = {})
     debug "exception: #{ex.message}"
     debug 'backtrace:'
     ex.backtrace.each do |line|
@@ -70,7 +73,7 @@ class Instance
 
     end
     stringio.rewind
-    file = File.new(file.path.gsub(/.gz/,'.zip').gsub(/.tar/,''),'w+')
+    file = File.new(file.path.gsub(/.gz/, '.zip').gsub(/.tar/, ''), 'w+')
     file.write stringio.read
     file.rewind
     file
