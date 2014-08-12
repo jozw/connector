@@ -140,6 +140,10 @@ class ServiceApp
                   service_instance = service_manager.instance
                   settings.service_instances[service_instance.instance_id] = service_instance
 
+                  trap "TERM" do
+                    ws.close_connection
+                  end
+
                   not_found unless service_instance.has_listener?(listener_id)
 
                   listener_data = {}
