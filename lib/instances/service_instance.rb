@@ -6,11 +6,12 @@ Dir.glob('./lib/instances/*.rb') { |p| require p }
 
 module Factor
   class ServiceInstance < Instance
-    attr_accessor :definition, :step_data, :callback, :listener_instances
+    attr_accessor :definition, :step_data, :callback, :listener_instances, :action_instances
 
-    def initialize(options={})
-      @listener_instances={}
-      @instance_id=SecureRandom.hex
+    def initialize(options = {})
+      @listener_instances = {}
+      @action_instances   = {}
+      @instance_id        = SecureRandom.hex
       super(options)
     end
 
@@ -25,6 +26,7 @@ module Factor
       action_instance.instance_id = @instance_id
       action_instance.definition  = @definition.actions[action_id]
       action_instance.callback    = @callback
+      action_instances[action_id] = action_instance
       action_instance.async.start(params)
     end
 
@@ -43,8 +45,16 @@ module Factor
         warn "Listener isn't running, no need to stop"
         respond type:'stopped'
       else
-        @listener_instances[listener_id].async.stop 
+        @listener_instances[listener_id].stop
+        @listener_instances[listener_id].terminate
         @listener_instances.delete listener_id
+      end
+    end
+
+    def stop_action(action_id)
+      if @action_instances[action_id]
+        @action_instances[action_id].terminate
+        @action_instances.delete action_id
       end
     end
 

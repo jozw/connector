@@ -207,11 +207,13 @@ class ServiceApp
                   end
                   ws.onclose do
                     logger.info "CLOSE #{request.path_info}"
+                    service_instance.stop_action(action_id)
                   end
 
                   ws.onerror do |error|
                     logger.error "ERROR #{error.class}"
                     logger.error error
+                    # service_instance.stop_action(action_id)
                   end
 
                   ws.onmessage do |msg|
