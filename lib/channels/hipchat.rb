@@ -3,21 +3,21 @@
 require 'httparty'
 
 service 'hipchat' do
-  listeners = %w(message notification exit enter topic_change).map do |n|
-    "room_#{n}"
+  listeners = %w(message notification exit enter topic_change)
   end
   listeners.each do |listener_name|
     listener listener_name do
       start do |params|
-        room_id = params['room_id'] || params['room']
-        api_key = params['api_key']
-        filter  = params['filter']
+        room_id     = params['room_id'] || params['room']
+        api_key     = params['api_key']
+        filter      = params['filter']
+        listener_id = "room_#{listener_name}"
 
         fail 'API Key is required' unless api_key
         fail 'Room ID is required' unless room_id
-        fail 'Filter is required' unless filter
+        fail 'Filter is required' if !filter && listener_name == 'message'
 
-        hook_url = get_web_hook(listener_name)
+        hook_url = get_web_hook(listener_id)
 
         base       = 'https://api.hipchat.com/v2/'
         path       = ['room', room_id, 'webhook'].join('/')
@@ -53,10 +53,10 @@ service 'hipchat' do
           begin
             body = {
               url: hook_url,
-              pattern: filter,
-              event: listener_name,
+              event: listener_id,
               name: 'workflow'
             }
+            body[:pattern] = filter if filter
             post_params = {
               body: body.to_json,
               headers: headers
@@ -76,16 +76,23 @@ service 'hipchat' do
           end
         end
 
-        hook_url = web_hook id: listener_name do
+        hook_url = web_hook id: listener_id do
           start do |listener_start_params, hook_data, _req, _res|
             info 'Triggering workflow...'
             begin
-              filter           = listener_start_params['filter']
-              original_message = hook_data['item']['message']['message']
-              regexp           = Regexp.new(filter)
-              matches          = regexp.match(original_message).captures
-              hook_data['matches']  = matches
-              hook_data['message']  = original_message
+              filter = listener_start_params['filter']
+
+              if hook_data['item']['message'] && hook_data['item']['message']['message']
+                original_message = hook_data['item']['message']['message']
+                hook_data['message']  = original_message
+              
+                if filter
+                  regexp               = Regexp.new(filter)
+                  matches              = regexp.match(original_message).captures
+                  hook_data['matches'] = matches
+                end
+              end
+              
               hook_data['hook_id']  = hook_id
             rescue => ex
               fail "Couldn't parse message from Hipchat", exception: ex
@@ -108,7 +115,7 @@ service 'hipchat' do
         fail 'Room ID is required' unless room_id
 
         info "Deleting hook #{listener_name}"
-        hook_url = get_web_hook(listener_name)
+        hook_url = get_web_hook(listener_id)
 
         base       = 'https://api.hipchat.com/v2/'
         path       = ['room', room_id, 'webhook'].join('/')
