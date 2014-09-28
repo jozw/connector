@@ -15,7 +15,7 @@ class ListenerInstance < Instance
     @params = params
 
     begin
-      instance_exec @params, &@definition.start
+      instance_exec @params, &@definition.start if @definition && @definition.start
       respond type: 'return'
     rescue FactorConnectorError => ex
       error ex.message
