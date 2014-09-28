@@ -30,7 +30,7 @@ class ListenerInstance < Instance
 
   def stop
     begin
-      instance_exec @params, &@definition.stop
+      instance_exec @params, &@definition.stop if @definition && @definition.stop
       respond type: 'stopped'
     rescue FactorConnectorError => ex
       error ex.message
