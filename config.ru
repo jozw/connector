@@ -1,10 +1,3 @@
-require 'sinatra'
-require './lib/service_app.rb'
+require './app'
 
-app=ServiceApp.new
-
-Dir.glob("./lib/channels/*.rb") do |path|
-  app.load path
-end
-
-run app.sinatra_app
+run Sinatra::Application
