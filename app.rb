@@ -81,6 +81,27 @@ get '/health' do
 end
 
 namespace '/v0.4' do
+  post '/:hook_id' do
+    data = get_params
+    hook_id = data['hook_id']
+    service_instances = get_service_instances_by_hook_id(hook_id)
+
+    status=[]
+    service_instances.each do |service_instance|
+      service_instance.listener_instances.each do |listener_id,listener_instance|
+        if listener_instance.web_hooks.keys.include?(hook_id)
+          begin
+            service_instance.call_hook(listener_id,hook_id,data,request,response)
+            status << {:message=>"Call to service instance #{service_instance.instance_id} succeeded"}
+          rescue => ex
+            status << {:message=>"Call to service instance #{service_instance.instance_id} failed"}
+          end
+        end
+      end
+    end
+    status.to_json
+  end
+
   namespace '/:service_id' do
     namespace '/listeners' do
       post '/:listener_id/instances/:instance_id/hooks/:hook_id' do
