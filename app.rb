@@ -81,7 +81,7 @@ get '/health' do
 end
 
 namespace '/v0.4' do
-  post '/:hook_id' do
+  post '/hooks/:hook_id' do
     data = get_params
     hook_id = data['hook_id']
     service_instances = get_service_instances_by_hook_id(hook_id)
