@@ -2,7 +2,7 @@ source 'https://rubygems.org'
 
 gem 'sinatra', '~> 1.4.5'
 gem 'sinatra-contrib', '~> 1.4.2'
-gem 'thin', '~> 1.6.2'
+gem 'thin', '~> 1.6.3'
 gem 'foreman', '~> 0.75.0'
 gem 'sinatra-websocket', '~> 0.3.0'
 gem 'multi_json', '~> 1.10.1'
