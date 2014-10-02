@@ -19,6 +19,7 @@ gem 'factor-connector-ssh'
 gem 'factor-connector-timer'
 gem 'factor-connector-travis'
 gem 'factor-connector-web'
+gem 'factor-connector-rackspace'
 
 
 group :development do
