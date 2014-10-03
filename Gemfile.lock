@@ -10,6 +10,8 @@ GEM
     builder (3.2.2)
     celluloid (0.16.0)
       timers (~> 4.0.0)
+    codeclimate-test-reporter (0.4.1)
+      simplecov (>= 0.7.1, < 1.0.0)
     coderay (1.1.0)
     columnize (0.8.9)
     daemons (1.1.9)
@@ -22,6 +24,7 @@ GEM
     descendants_tracker (0.0.4)
       thread_safe (~> 0.3, >= 0.3.1)
     diff-lcs (1.2.4)
+    docile (1.1.5)
     dotenv (0.11.1)
       dotenv-deployment (~> 0.0.2)
     dotenv-deployment (0.0.2)
@@ -195,6 +198,11 @@ GEM
     rubyzip (1.1.6)
     rufus-scheduler (3.0.9)
       tzinfo
+    simplecov (0.9.1)
+      docile (~> 1.1.0)
+      multi_json (~> 1.0)
+      simplecov-html (~> 0.8.0)
+    simplecov-html (0.8.0)
     sinatra (1.4.5)
       rack (~> 1.4)
       rack-protection (~> 1.4)
@@ -242,6 +250,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  codeclimate-test-reporter
   debugger
   factor-connector-api (~> 0.0.3)
   factor-connector-bitballoon
