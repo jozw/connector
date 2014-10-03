@@ -1,0 +1,14 @@
+{
+  "name": "Factor.io Connector Server",
+  "description": "This is the Factor.io Connector service which hosts all the integrations with 3rd party services.",
+  "keywords": [
+    "Factor",
+    "Factor.io"
+  ],
+  "repository": "https://github.com/factor-io/connector",
+  "success_url": "/",
+  "scripts": {
+  },
+  "addons": [
+  ]
+}
