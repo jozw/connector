@@ -12,10 +12,6 @@ There is no code in this server for defining the third party services. Each of t
 1. Add the gem containing the integration to the [Gemfile](https://github.com/factor-io/connector/blob/master/Gemfile).
 2. Add the appropriate `require` statement in [init.rb](https://github.com/factor-io/connector/blob/master/init.rb).
 
-### Create custom integrations
-
-
-
 ## Running
 ### Localhost
     git clone git@github.com:factor-io/connector
