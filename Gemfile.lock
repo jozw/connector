@@ -250,7 +250,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  codeclimate-test-reporter
+  codeclimate-test-reporter (~> 0.4.1)
   debugger
   factor-connector-api (~> 0.0.3)
   factor-connector-bitballoon
