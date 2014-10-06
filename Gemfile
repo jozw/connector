@@ -7,7 +7,7 @@ gem 'foreman', '~> 0.75.0'
 gem 'sinatra-websocket', '~> 0.3.0'
 gem 'multi_json', '~> 1.10.1'
 
-gem 'factor-connector-api', '~> 0.0.3'
+gem 'factor-connector-api', '~> 0.0.7'
 
 gem 'factor-connector-bitballoon'
 gem 'factor-connector-ftp'
