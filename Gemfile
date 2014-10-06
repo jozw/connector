@@ -21,11 +21,6 @@ gem 'factor-connector-travis'
 gem 'factor-connector-web'
 gem 'factor-connector-rackspace'
 
-
-group :development do
-  gem 'debugger'
-end
-
 group :test do
   gem 'rspec', '~> 3.1.0'
   gem 'rake', '~> 10.3.2'
