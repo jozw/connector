@@ -20,26 +20,25 @@ configure do
 end
 
 helpers do
-  def get_params
-    body = {}
+  def inputs
     body_payload = begin
       MultiJson.load(request.body.read)
     rescue
       {}
     end
-    body.merge!(body_payload)
 
-    if params['payload']
-      body.merge!(MultiJson.load(params['payload']))
-      params.delete('payload')
+    param_payload = begin
+      MultiJson.load(params['payload']) if params['payload']
+    rescue
+      {}
     end
 
-    params.delete(:splat)
-    params.delete('splat')
-    params.delete(:captures)
-    params.delete('captures')
-    body.merge!(params)
-    body
+    %w(splat captures payload).each do |param|
+      params.delete param
+      params.delete param.to_sym
+    end
+
+    {}.merge(param_payload).merge(body_payload).merge(params)
   end
 
   def not_found
@@ -53,12 +52,14 @@ helpers do
   end
 
   def get_service_instances_by_hook_id(hook_id)
-    service_instances = settings.service_instances.values.select do |service_instance|
-      service_instance.listener_instances.each do |listener_id,listener_instance|
+    service_instances = settings.service_instances.values
+    select_service_instances = service_instances.select do |service_instance|
+      listener_instances = service_instance.listener_instances
+      listener_instances.each do |_listener_id, listener_instance|
         listener_instance.web_hooks.keys.include?(hook_id)
       end
     end
-    service_instances
+    select_service_instances
   end
 
   def get_service_manager(service_id)
@@ -82,21 +83,30 @@ end
 
 namespace '/v0.4' do
   post '/hooks/:hook_id' do
-    data = get_params
-    hook_id = data['hook_id']
+    hook_id           = inputs['hook_id']
     service_instances = get_service_instances_by_hook_id(hook_id)
 
-    status=[]
+    status = []
     service_instances.each do |service_instance|
-      service_instance.listener_instances.each do |listener_id,listener_instance|
-        if listener_instance.web_hooks.keys.include?(hook_id)
-          begin
-            service_instance.call_hook(listener_id,hook_id,data,request,response)
-            status << {:message=>"Call to service instance #{service_instance.instance_id} succeeded"}
-          rescue => ex
-            status << {:message=>"Call to service instance #{service_instance.instance_id} failed"}
-          end
+      service_instance_id = service_instance.instance_id
+      listener_instances = service_instance.listener_instances
+      listener_instances.each do |listener_id, listener_instance|
+        next unless listener_instance.web_hooks.keys.include?(hook_id)
+        begin
+          service_instance.call_hook(
+            listener_id,
+            hook_id,
+            inputs,
+            request,
+            response)
+          status_message = 'succeeded'
+        rescue
+          status_message = 'failed'
         end
+        message <<-EOM
+        Call to service instance #{service_instance_id} #{status_message}
+        EOM
+        status << { message: message }
       end
     end
     status.to_json
@@ -105,60 +115,65 @@ namespace '/v0.4' do
   namespace '/:service_id' do
     namespace '/listeners' do
       post '/:listener_id/instances/:instance_id/hooks/:hook_id' do
-        data             = get_params
-        listener_id      = data['listener_id']
-        instance_id      = data['instance_id']
-        hook_id          = data['hook_id']
+        listener_id      = inputs['listener_id']
+        instance_id      = inputs['instance_id']
+        hook_id          = inputs['hook_id']
         service_instance = get_service_instance(instance_id)
         begin
-          service_instance.call_hook(listener_id, hook_id, data, request, response)
+          service_instance.call_hook(
+            listener_id,
+            hook_id,
+            inputs,
+            request,
+            response)
         rescue
           not_found
         end
-        {message: 'Call to hook completed'}.to_json
+        { message: 'Call to hook completed' }.to_json
       end
 
       get '/:listener_id' do
-        data = get_params
-        listener_id = data['listener_id']
-        service_id = data['service_id']
+        listener_id = inputs['listener_id']
+        service_id  = inputs['service_id']
 
         if request.websocket?
           request.websocket do |ws|
             settings.sockets << ws
-            service_manager = get_service_manager(service_id)
-            service_instance = service_manager.instance
-            settings.service_instances[service_instance.instance_id] = service_instance
+            service_manager     = get_service_manager(service_id)
+            service_instance    = service_manager.instance
+            service_instance_id = service_instance.instance_id
+            settings.service_instances[service_instance_id] = service_instance
 
-            trap "TERM" do
+            trap 'TERM' do
               ws.close_connection
             end
 
             not_found unless service_instance.has_listener?(listener_id)
 
-            listener_data = {}
+            listener_inputs = {}
 
             ws.onmessage do |msg|
               logger.info "MESSAGE #{request.path_info}"
-              listener_data = MultiJson.load(msg)
+              listener_inputs = MultiJson.load(msg)
 
               service_instance.callback = proc do |listener_response|
-                if listener_response[:type] == 'log'
-                  message = listener_response[:message]
+                message = listener_response[:message]
+
+                case listener_response[:type]
+                when 'log'
                   case listener_response[:status]
                   when 'info' then logger.info message
                   when 'warn' then logger.warn message
                   when 'error' then logger.error message
                   when 'debug' then logger.error message
                   end
-                end
-                if listener_response[:type] == 'fail' && listener_response[:message]
-                  logger.error listener_response[:message]
+                when 'fail'
+                  logger.error message if message
                 end
                 ws.send(MultiJson.dump(listener_response))
               end
 
-              service_instance.start_listener(listener_id, listener_data)
+              service_instance.start_listener(listener_id, listener_inputs)
             end
 
             ws.onopen do
@@ -185,9 +200,8 @@ namespace '/v0.4' do
 
     namespace '/actions' do
       get '/:action_id' do
-        data = get_params
-        action_id = data['action_id']
-        service_id = data['service_id']
+        action_id = inputs['action_id']
+        service_id = inputs['service_id']
 
         if request.websocket?
           request.websocket do |ws|
@@ -212,22 +226,25 @@ namespace '/v0.4' do
 
             ws.onmessage do |msg|
               logger.info "MESSAGE #{request.path_info}"
-              action_data = MultiJson.load(msg)
+              action_inputs = MultiJson.load(msg)
               service_instance.callback = proc do |action_response|
-                if action_response[:type] == 'log'
-                  message = action_response[:message]
+                message = action_response[:message]
+                case action_response[:type]
+                when 'log'
                   case action_response[:status]
                   when 'info' then logger.info message
                   when 'warn' then logger.warn message
                   when 'error' then logger.error message
                   when 'debug' then logger.error message
                   end
+                when 'fail'
+                  logger.error message if message
+                when 'return'
+                  logger.info "RESPOND #{action_response[:payload]}"
                 end
-                logger.error action_response[:message] if action_response[:type] == 'fail' && action_response[:message]
-                logger.info "RESPOND #{action_response[:payload]}" if action_response[:type] == 'return'
                 ws.send(MultiJson.dump(action_response))
               end
-              service_instance.call_action(action_id, action_data)
+              service_instance.call_action(action_id, action_inputs)
             end
           end
         else

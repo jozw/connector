@@ -1,3 +1,4 @@
+# encoding: UTF-8
 
 require 'factor/connector/bitballoon'
 require 'factor/connector/ftp'
