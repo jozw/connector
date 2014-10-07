@@ -20,7 +20,7 @@ describe 'Connector' do
         warn "this is a warning"
         error "this is an error"
         info "echo: #{params['echo']}"
-        action_callback {some_var:'has contents'}
+        action_callback some_var:'has contents'
       end
       action 'fail-test-method' do |params|
         fail "this is a fail"
@@ -60,6 +60,10 @@ describe 'Connector' do
 
     check_eventually @logs do |log|
       log['status'] == 'info' && log['message']=="echo: foo"
+    end
+
+    check_eventually @logs do |log|
+      log['type'] == 'return' && log['payload']== {"some_var"=>"has contents"}
     end
 
     @ws.close
