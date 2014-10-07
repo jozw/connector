@@ -25,4 +25,6 @@ group :test do
   gem 'rspec', '~> 3.1.0'
   gem 'rake', '~> 10.3.2'
   gem 'codeclimate-test-reporter', '~> 0.4.1'
+  gem 'faye-websocket', '~> 0.7.4'
+  gem 'wrong', '~> 0.3.3'
 end

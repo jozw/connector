@@ -1,6 +1,12 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    ParseTree (3.0.9)
+      RubyInline (~> 3.9.0)
+      sexp_processor (~> 3.2.0)
+    RubyInline (3.9.0)
+      ZenTest (~> 4.3)
+    ZenTest (4.11.0)
     addressable (2.3.6)
     backports (3.6.1)
     bitballoon (0.1.6)
@@ -16,6 +22,7 @@ GEM
     daemons (1.1.9)
     descendants_tracker (0.0.4)
       thread_safe (~> 0.3, >= 0.3.1)
+    diff (0.3.6)
     diff-lcs (1.2.4)
     docile (1.1.5)
     dotenv (0.11.1)
@@ -76,6 +83,9 @@ GEM
       multipart-post (>= 1.2, < 3)
     faraday_middleware (0.9.1)
       faraday (>= 0.7.4, < 0.10)
+    faye-websocket (0.7.5)
+      eventmachine (>= 0.12.0)
+      websocket-driver (>= 0.3.5)
     ffi (1.9.5)
     fog (1.23.0)
       fog-brightbox
@@ -159,6 +169,7 @@ GEM
       multi_json (~> 1.3)
       multi_xml (~> 0.5)
       rack (~> 1.2)
+    predicated (0.2.6)
     progress (2.4.0)
     pry (0.9.12.6)
       coderay (~> 1.0)
@@ -188,9 +199,15 @@ GEM
     rspec-mocks (3.1.2)
       rspec-support (~> 3.1.0)
     rspec-support (3.1.1)
+    ruby2ruby (1.3.1)
+      ruby_parser (~> 2.0)
+      sexp_processor (~> 3.0)
+    ruby_parser (2.3.1)
+      sexp_processor (~> 3.0)
     rubyzip (1.1.6)
     rufus-scheduler (3.0.9)
       tzinfo
+    sexp_processor (3.2.0)
     simplecov (0.9.1)
       docile (~> 1.1.0)
       multi_json (~> 1.0)
@@ -238,6 +255,14 @@ GEM
     tzinfo (1.2.2)
       thread_safe (~> 0.1)
     websocket (1.2.1)
+    websocket-driver (0.3.5)
+    wrong (0.3.3)
+      ParseTree (>= 3.0.5)
+      diff (>= 0.3.6)
+      diff-lcs (>= 1.1.2)
+      predicated (>= 0.2.1)
+      ruby2ruby (>= 1.2.4)
+      ruby_parser (>= 2.0.4)
 
 PLATFORMS
   ruby
@@ -256,6 +281,7 @@ DEPENDENCIES
   factor-connector-timer
   factor-connector-travis
   factor-connector-web
+  faye-websocket (~> 0.7.4)
   foreman (~> 0.75.0)
   multi_json (~> 1.10.1)
   rake (~> 10.3.2)
@@ -264,3 +290,4 @@ DEPENDENCIES
   sinatra-contrib (~> 1.4.2)
   sinatra-websocket (~> 0.3.0)
   thin (~> 1.6.3)
+  wrong (~> 0.3.3)
