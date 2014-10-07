@@ -20,7 +20,7 @@ describe 'Connector' do
         warn "this is a warning"
         error "this is an error"
         info "echo: #{params['echo']}"
-        action_callback {a_variable:'has contents'}
+        action_callback {some_var:'has contents'}
       end
       action 'fail-test-method' do |params|
         fail "this is a fail"
@@ -40,20 +40,39 @@ describe 'Connector' do
     EM.run do
       @ws = Faye::WebSocket::Client.new(url, nil, settings)
       @ws.on :message do |message|
-        puts "message: #{JSON.parse(message.data)}"
-        @logs << JSON.parse(message.data)
+        log = JSON.parse(message.data)
+        puts log
+        @logs << log
       end
     end
 
     @ws.send({echo:'foo'}.to_json)
 
-    Wrong::eventually do
-      @logs.any? do |log|
-        log[:status] == 'info' && log[:message]=='this is info'
-      end
+    check_eventually @logs do |log|
+      log['status'] == 'info' && log['message']=='this is info'
+    end
+
+    check_eventually @logs do |log|
+      log['status'] == 'warn' && log['message']=='this is a warning'
+    end
+
+    check_eventually @logs do |log|
+      log['status'] == 'error' && log['message']=='this is an error'
+    end
+
+    check_eventually @logs do |log|
+      log['status'] == 'info' && log['message']=="echo: foo"
     end
 
     @ws.close
+  end
+
+  def check_eventually(logs, &block)
+    Wrong::eventually do
+      logs.any? do |log|
+        block.call(log)
+      end
+    end
   end
 
 

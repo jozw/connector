@@ -4,6 +4,8 @@ require 'codeclimate-test-reporter'
 require 'rspec'
 require 'rack/test'
 
+ENV['RACK_ENV']='test'
+
 CodeClimate::TestReporter.start
 
 require './app'

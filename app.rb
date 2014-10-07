@@ -12,9 +12,12 @@ require_relative './init.rb'
 
 register Sinatra::Namespace
 
-configure do
+configure :production, :development do
   enable :logging
   enable :raise_errors
+end
+
+configure do
   set :service_instances, {}
   set :sockets, []
 end
