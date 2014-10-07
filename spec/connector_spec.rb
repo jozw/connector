@@ -4,7 +4,6 @@ require 'spec_helper'
 require 'faye/websocket'
 require 'json'
 require "socket"
-require 'rspec/em'
 require 'wrong'
 
 describe 'Connector' do
@@ -17,7 +16,6 @@ describe 'Connector' do
   before do
     Factor::Connector.service 'basic' do
       action 'test' do |params|
-        puts "PARTY"
         info "this is info"
         warn "this is a warning"
         error "this is an error"
@@ -37,7 +35,6 @@ describe 'Connector' do
 
   it "can open a connection" do
     url = "ws://0.0.0.0:4180/v0.4/basic/actions/test"
-    puts "URL: #{url}"
     settings = { ping: 10, retry: 5 }
     @logs = []
     EM.run do
