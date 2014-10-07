@@ -28,7 +28,7 @@ helpers do
     end
 
     param_payload = begin
-      MultiJson.load(params['payload']) if params['payload']
+      param['payload'] ? MultiJson.load(params['payload']) : {}
     rescue
       {}
     end
