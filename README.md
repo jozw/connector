@@ -12,6 +12,47 @@ There is no code in this server for defining the third party services. Each of t
 1. Add the gem containing the integration to the [Gemfile](https://github.com/factor-io/connector/blob/master/Gemfile).
 2. Add the appropriate `require` statement in [init.rb](https://github.com/factor-io/connector/blob/master/init.rb).
 
+### List of available integrations
+- Hosting / Infrastructure
+    - [Rackspace](https://github.com/factor-io/connector-rackspace)
+    - [Heroku](https://github.com/factor-io/connector-heroku)
+    - [BitBalloon](https://github.com/factor-io/connector-bitballoon)
+    - AWS - coming soon
+    - Docker - coming soon
+- Configuration Management
+    - Chef Hosted, coming soon
+    - Ansible Tower, coming soon
+- Issue/Feature tracking
+    - [Trello](https://github.com/factor-io/connector-trello)
+    - [Github Issues](https://github.com/factor-io/connector-github)
+- Communication / Notifications
+    - [Hipchat](https://github.com/factor-io/connector-hipchat)
+    - [Pushover](https://github.com/factor-io/connector-pushover)
+    - Slack - coming soon
+    - IRC - coming soon
+- Fundemental
+    - [Web](https://github.com/factor-io/connector-web)
+    - [Timer](https://github.com/factor-io/connector-timer)
+- Continuous Integration
+    - [Travis-CI](https://github.com/factor-io/connector-travis)
+    - Jenkins - coming soon
+    - TeamCity - coming soon
+- Source Code Management
+    - [Github](https://github.com/factor-io/connector-github)
+- Remote file management
+    - [SSH](https://github.com/factor-io/connector-ssh)
+    - [FTP](https://github.com/factor-io/connector-ftp)
+- Monitoring / Alerting
+    - PagerDuty - coming soon
+    - New Relic - coming soon
+- Build Systems
+    - Jekyll - coming soon
+    - Middleman - coming soon
+    - Octopress - coming soon
+    - Pelican - coming soon
+    - mkdocs - coming soon
+
+
 ## Running
 ### Localhost
     git clone git@github.com:factor-io/connector
