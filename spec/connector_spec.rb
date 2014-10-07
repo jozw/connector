@@ -25,6 +25,18 @@ describe 'Connector' do
       action 'fail-test-method' do |params|
         fail "this is a fail"
       end
+      listener 'listen-test' do
+        start do |params|
+          info "this is info"
+          warn "this is a warning"
+          error "this is an error"
+          info "echo: #{params['echo']}"
+          start_workflow some_var:'has contents'
+        end
+        stop do |params|
+
+        end
+      end
     end
     start_server
   end
@@ -33,41 +45,105 @@ describe 'Connector' do
     stop_server
   end
 
-  it "can open a connection" do
-    url = "ws://0.0.0.0:4180/v0.4/basic/actions/test"
-    settings = { ping: 10, retry: 5 }
-    @logs = []
-    EM.run do
-      @ws = Faye::WebSocket::Client.new(url, nil, settings)
-      @ws.on :message do |message|
-        @logs << JSON.parse(message.data)
+  describe "Action" do
+    before do 
+      url = "ws://0.0.0.0:4180/v0.4/basic/actions/test"
+      settings = { ping: 10, retry: 5 }
+      @logs = []
+      EM.run do
+        @ws = Faye::WebSocket::Client.new(url, nil, settings)
+        @ws.on :message do |message|
+          @logs << JSON.parse(message.data)
+        end
+      end
+      @ws.send({echo:'foo'}.to_json)
+    end
+
+    after do
+      @ws.close
+    end
+
+    it "can send info" do
+      check_eventually @logs do |log|
+        log['status'] == 'info' && log['message']=='this is info'
       end
     end
 
-    @ws.send({echo:'foo'}.to_json)
-
-    check_eventually @logs do |log|
-      log['status'] == 'info' && log['message']=='this is info'
+    it "can send a warning" do
+      check_eventually @logs do |log|
+        log['status'] == 'warn' && log['message']=='this is a warning'
+      end
     end
 
-    check_eventually @logs do |log|
-      log['status'] == 'warn' && log['message']=='this is a warning'
+    it "can send an error" do
+      check_eventually @logs do |log|
+        log['status'] == 'error' && log['message']=='this is an error'
+      end
     end
 
-    check_eventually @logs do |log|
-      log['status'] == 'error' && log['message']=='this is an error'
+    it "can receive information from a parameter" do
+      check_eventually @logs do |log|
+        log['status'] == 'info' && log['message']=="echo: foo"
+      end
     end
 
-    check_eventually @logs do |log|
-      log['status'] == 'info' && log['message']=="echo: foo"
+    it "can send payloads in a response" do 
+      check_eventually @logs do |log|
+        log['type'] == 'return' && log['payload']== {"some_var"=>"has contents"}
+      end
     end
-
-    check_eventually @logs do |log|
-      log['type'] == 'return' && log['payload']== {"some_var"=>"has contents"}
-    end
-
-    @ws.close
   end
+
+  describe "Listener" do
+    before do
+      url = "ws://0.0.0.0:4180/v0.4/basic/listeners/listen-test"
+      settings = { ping: 10, retry: 5 }
+      @logs = []
+      EM.run do
+        @ws = Faye::WebSocket::Client.new(url, nil, settings)
+        @ws.on :message do |message|
+          @logs << JSON.parse(message.data)
+        end
+      end
+      @ws.send({echo:'foo'}.to_json)
+    end
+
+    after do
+      @ws.close
+    end
+
+    it "can send info" do
+      check_eventually @logs do |log|
+        log['status'] == 'info' && log['message']=='this is info'
+      end
+    end
+
+    it "can send a warning" do
+      check_eventually @logs do |log|
+        log['status'] == 'warn' && log['message']=='this is a warning'
+      end
+    end
+
+    it "can send an error" do
+      check_eventually @logs do |log|
+        log['status'] == 'error' && log['message']=='this is an error'
+      end
+    end
+
+    it "can receive information from a parameter" do
+      check_eventually @logs do |log|
+        log['status'] == 'info' && log['message']=="echo: foo"
+      end
+    end
+
+    it "can start workflows with parameters" do 
+      check_eventually @logs do |log|
+        log['type'] == 'start_workflow' && log['payload']== {"some_var"=>"has contents"}
+      end
+    end
+
+  end
+
 
   def check_eventually(logs, &block)
     Wrong::eventually do
