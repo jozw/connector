@@ -40,9 +40,7 @@ describe 'Connector' do
     EM.run do
       @ws = Faye::WebSocket::Client.new(url, nil, settings)
       @ws.on :message do |message|
-        log = JSON.parse(message.data)
-        puts log
-        @logs << log
+        @logs << JSON.parse(message.data)
       end
     end
 
