@@ -20,6 +20,7 @@ gem 'factor-connector-timer'
 gem 'factor-connector-travis'
 gem 'factor-connector-web'
 gem 'factor-connector-rackspace'
+gem 'factor-connector-newrelic'
 
 group :test do
   gem 'rspec', '~> 3.1.0'
