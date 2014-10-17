@@ -21,6 +21,7 @@ gem 'factor-connector-slack'
 gem 'factor-connector-ssh'
 gem 'factor-connector-timer'
 gem 'factor-connector-travis'
+gem 'factor-connector-trello'
 gem 'factor-connector-web'
 
 group :test do

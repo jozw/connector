@@ -75,6 +75,8 @@ GEM
     factor-connector-travis (0.0.2)
       factor-connector-api (~> 0.0.1)
       travis (= 1.7.2)
+    factor-connector-trello (0.0.2)
+      factor-connector-api (~> 0.0.13)
     factor-connector-web (0.0.2)
       factor-connector-api (~> 0.0.3)
       rest-client (~> 1.7.2)
@@ -286,6 +288,7 @@ DEPENDENCIES
   factor-connector-ssh
   factor-connector-timer
   factor-connector-travis
+  factor-connector-trello
   factor-connector-web
   faye-websocket (~> 0.7.4)
   foreman (~> 0.75.0)
