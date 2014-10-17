@@ -28,7 +28,7 @@ There is no code in this server for defining the third party services. Each of t
 - Communication / Notifications
     - [Hipchat](https://github.com/factor-io/connector-hipchat)
     - [Pushover](https://github.com/factor-io/connector-pushover)
-    - Slack - coming soon
+    - [Slack](https://github.com/factor-io/connector-slack)
     - IRC - coming soon
 - Fundemental
     - [Web](https://github.com/factor-io/connector-web)
